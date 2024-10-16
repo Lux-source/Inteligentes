@@ -185,6 +185,51 @@ def a_star_search(problem, heuristic):
     }
 
 
+def best_first_search(problem, heuristic):
+    start_time = time.time()
+    frontier = []
+    counter = itertools.count()
+    start_node = Node(problem.initial_state)
+    h_cost = heuristic(start_node.state, problem.goal_state)
+    heapq.heappush(frontier, (h_cost, next(counter), start_node))
+    explored = set()
+    nodes_generated = 1
+    nodes_explored = 0
+
+    while frontier:
+        _, _, node = heapq.heappop(frontier)
+        nodes_explored += 1
+
+        if problem.goal_test(node.state):
+            solution_path = solution(node)
+            execution_time = format_time(time.time() - start_time)
+            solution_cost = format_time(node.path_cost)
+            return solution_path, {
+                "nodes_generated": nodes_generated,
+                "nodes_explored": nodes_explored,
+                "solution_depth": node.depth,
+                "solution_cost": solution_cost,
+                "execution_time": execution_time,
+            }
+
+        explored.add(node.state)
+
+        for next_state, action in node.state.neighbors:
+            if next_state not in explored:
+                child = Node(next_state, node, action, node.path_cost + action.cost())
+                h_cost = heuristic(child.state, problem.goal_state)
+                heapq.heappush(frontier, (h_cost, next(counter), child))
+                nodes_generated += 1
+
+    return None, {
+        "nodes_generated": nodes_generated,
+        "nodes_explored": nodes_explored,
+        "solution_depth": None,
+        "solution_cost": None,
+        "execution_time": format_time(time.time() - start_time),
+    }
+
+
 # Heuristic function for A*
 def heuristic(state, goal_state):
     dx = state.latitude - goal_state.latitude
@@ -218,3 +263,12 @@ class AStarSearch(SearchAlgorithm):
 
     def search(self, problem):
         return a_star_search(problem, self.heuristic)
+
+
+# Best-First Search class
+class BestFirstSearch(SearchAlgorithm):
+    def __init__(self, heuristic):
+        self.heuristic = heuristic
+
+    def search(self, problem):
+        return best_first_search(problem, self.heuristic)

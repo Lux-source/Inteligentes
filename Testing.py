@@ -3,6 +3,7 @@ from Search import (
     BreadthFirstSearch,
     DepthFirstSearch,
     AStarSearch,
+    BestFirstSearch,
     heuristic,
     format_solution_details,
 )
@@ -37,6 +38,16 @@ a_star_search = AStarSearch(heuristic)
 a_star_result, a_star_stats = a_star_search.search(problem)
 if a_star_result:
     output = format_solution_details(a_star_result, a_star_stats)
+    print(output)
+else:
+    print("No solution found")
+
+# Test Best-First Search
+print("\nTesting Best-First Search:")
+best_first_search = BestFirstSearch(heuristic)
+best_first_result, best_first_stats = best_first_search.search(problem)
+if best_first_result:
+    output = format_solution_details(best_first_result, best_first_stats)
     print(output)
 else:
     print("No solution found")
