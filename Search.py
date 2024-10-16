@@ -1,7 +1,9 @@
+import time
 from collections import deque
 from abc import ABC, abstractmethod
 from Node import Node
 import heapq
+from datetime import timedelta
 
 
 # Helper function to extract the solution path
@@ -14,8 +16,35 @@ def solution(node):
     return path
 
 
+# Formatting the output for easier readability
+def format_solution_details(solution_path, stats):
+    formatted_solution = []
+    for action in solution_path:
+        formatted_solution.append(
+            f"{action.origin.identifier} → {action.destination.identifier}, {action.distance}"
+        )
+    formatted_solution_str = "[" + ", ".join(formatted_solution) + "]"
+
+    formatted_output = (
+        f"Generated nodes: {stats['nodes_generated']}\n"
+        f"Expanded nodes: {stats['nodes_explored']}\n"
+        f"Execution time: {stats['execution_time']}\n"
+        f"Solution length: {stats['solution_depth']}\n"
+        f"Solution cost: {stats['solution_cost']}\n"
+        f"Solution: {formatted_solution_str}"
+    )
+    return formatted_output
+
+
+# Convert time to the desired format days:hours:min:seconds
+def format_time(seconds):
+    td = timedelta(seconds=seconds)
+    return str(td)
+
+
 # Breadth-First Search (BFS) function
 def breadth_first_search(problem):
+    start_time = time.time()
     frontier = deque([Node(problem.initial_state)])
     explored = set()
     nodes_generated = 1
@@ -26,11 +55,15 @@ def breadth_first_search(problem):
         nodes_explored += 1
 
         if problem.goal_test(node.state):
-            return solution(node), {
+            solution_path = solution(node)
+            execution_time = format_time(time.time() - start_time)
+            solution_cost = format_time(node.path_cost)
+            return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
-                "path_cost": node.path_cost,
                 "solution_depth": node.depth,
+                "solution_cost": solution_cost,
+                "execution_time": execution_time,
             }
 
         explored.add(node.state)
@@ -48,13 +81,15 @@ def breadth_first_search(problem):
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
-        "path_cost": None,
         "solution_depth": None,
+        "solution_cost": None,
+        "execution_time": format_time(time.time() - start_time),
     }
 
 
 # Depth-First Search (DFS) function
 def depth_first_search(problem):
+    start_time = time.time()
     frontier = [Node(problem.initial_state)]
     explored = set()
     nodes_generated = 1
@@ -65,11 +100,15 @@ def depth_first_search(problem):
         nodes_explored += 1
 
         if problem.goal_test(node.state):
-            return solution(node), {
+            solution_path = solution(node)
+            execution_time = format_time(time.time() - start_time)
+            solution_cost = format_time(node.path_cost)
+            return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
-                "path_cost": node.path_cost,
                 "solution_depth": node.depth,
+                "solution_cost": solution_cost,
+                "execution_time": execution_time,
             }
 
         explored.add(node.state)
@@ -87,13 +126,15 @@ def depth_first_search(problem):
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
-        "path_cost": None,
         "solution_depth": None,
+        "solution_cost": None,
+        "execution_time": format_time(time.time() - start_time),
     }
 
 
 # A* Search function
 def a_star_search(problem, heuristic):
+    start_time = time.time()
     frontier = []
     heapq.heappush(frontier, (0, Node(problem.initial_state)))
     explored = set()
@@ -105,11 +146,15 @@ def a_star_search(problem, heuristic):
         nodes_explored += 1
 
         if problem.goal_test(node.state):
-            return solution(node), {
+            solution_path = solution(node)
+            execution_time = format_time(time.time() - start_time)
+            solution_cost = format_time(node.path_cost)
+            return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
-                "path_cost": node.path_cost,
                 "solution_depth": node.depth,
+                "solution_cost": solution_cost,
+                "execution_time": execution_time,
             }
 
         explored.add(node.state)
