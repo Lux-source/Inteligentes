@@ -1,9 +1,10 @@
 import time
+import heapq
+import itertools
+from datetime import timedelta
 from collections import deque
 from abc import ABC, abstractmethod
 from Node import Node
-import heapq
-from datetime import timedelta
 
 
 # Helper function to extract the solution path
@@ -136,13 +137,17 @@ def depth_first_search(problem):
 def a_star_search(problem, heuristic):
     start_time = time.time()
     frontier = []
-    heapq.heappush(frontier, (0, Node(problem.initial_state)))
+    counter = itertools.count()
+    start_node = Node(problem.initial_state)
+    f_cost = heuristic(start_node.state, problem.goal_state)
+    heapq.heappush(frontier, (f_cost, next(counter), start_node))
     explored = set()
+    frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
     nodes_explored = 0
 
     while frontier:
-        _, node = heapq.heappop(frontier)
+        _, _, node = heapq.heappop(frontier)
         nodes_explored += 1
 
         if problem.goal_test(node.state):
@@ -160,17 +165,23 @@ def a_star_search(problem, heuristic):
         explored.add(node.state)
 
         for next_state, action in node.state.neighbors:
-            if next_state not in explored:
-                child = Node(next_state, node, action, node.path_cost + action.cost())
-                f_cost = child.path_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, child))
+            child_cost = node.path_cost + action.cost()
+            if next_state not in explored and (
+                next_state not in frontier_state_costs
+                or child_cost < frontier_state_costs[next_state]
+            ):
+                child = Node(next_state, node, action, child_cost)
+                f_cost = child_cost + heuristic(child.state, problem.goal_state)
+                heapq.heappush(frontier, (f_cost, next(counter), child))
+                frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
-        "path_cost": None,
         "solution_depth": None,
+        "solution_cost": None,
+        "execution_time": format_time(time.time() - start_time),
     }
 
 
