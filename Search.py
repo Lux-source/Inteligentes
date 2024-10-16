@@ -128,6 +128,48 @@ def a_star_search(problem, heuristic):
         "solution_depth": None,
     }
 
+def GreedybestFirstSearch(problem, heuristic):
+    """Implements the Greedy Best-First Search algorithm."""
+    # Initialize the priority queue with the start node
+    start_node = Node(problem.initial_state)
+    frontier = []
+    heapq.heappush(frontier, (heuristic(start_node.state, problem.goal_state), start_node))
+    nodes_generated = 1
+    nodes_explored = 0
+    explored = set()  # Keep track of explored states
+
+    while frontier:
+        # Get the node with the lowest heuristic value (closest to the goal)
+        _, current_node = heapq.heappop(frontier)
+        nodes_explored += 1 
+        
+        # If the goal is reached, return the solution path
+        if problem.goal_test(current_node.state):
+            return solution(current_node), {
+                "nodes_generated": nodes_generated,
+                "nodes_explored": nodes_explored,
+                "path_cost": current_node.path_cost,
+                "solution_depth": current_node.depth,
+            }
+
+        explored.add(current_node.state)
+
+        # Expand the current node and add its neighbors to the priority queue
+        for action in problem.actions(current_node.state):
+            child = current_node.expand(problem)
+            for child_node in child:
+                if child_node.state not in explored:
+                    child_node.heuristic = heuristic(child_node.state, problem.goal_state)
+                    heapq.heappush(frontier, (child_node.heuristic, child_node))
+                    nodes_generated += 1
+
+    return None, {
+        "nodes_generated: ": nodes_generated,
+        "nodes_explored: ": nodes_explored, 
+        "path_cost: ": None,
+        "Solution depth: ":None,
+    }  
+
 
 # Heuristic function for A*
 def heuristic(state, goal_state):
@@ -162,3 +204,10 @@ class AStarSearch(SearchAlgorithm):
 
     def search(self, problem):
         return a_star_search(problem, self.heuristic)
+    
+class GreedyBestFirstSearch(SearchAlgorithm):
+    def __init__(self, heuristic):
+        self.heuristic = heuristic
+    
+    def search(self, problem):
+        return GreedybestFirstSearch(problem, self.heuristic)

@@ -1,8 +1,8 @@
 from ImportJSON import loadJSON
-from Search import BreadthFirstSearch, DepthFirstSearch, AStarSearch, heuristic
+from Search import BreadthFirstSearch, DepthFirstSearch, AStarSearch, heuristic, GreedyBestFirstSearch
 
 # Load the problem from the JSON file
-json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\pr1_SSII_English\problems\large\calle_agustina_aroca_albacete_1000_0.json"
+json_file_path = r"/Users/carmen/repository/Inteligentes/problems/huge/calle_agustina_aroca_albacete_5000_0.json"
 problem = loadJSON(json_file_path)
 
 # Test BFS
@@ -25,3 +25,10 @@ a_star_search = AStarSearch(heuristic)
 a_star_result, a_star_stats = a_star_search.search(problem)
 print("A* Path:", a_star_result if a_star_result else "No solution found")
 print("A* Stats:", a_star_stats)
+
+#Testing Greedy Best-First Search
+print("Greedy Best-First Search solution: ")
+gbfs = GreedyBestFirstSearch(heuristic)
+gbfs_solution_path, gbfs_solution_stats = gbfs.search(problem)
+print(gbfs_solution_path if gbfs_solution_path else "No solution found")
+#print(gbfs_solition_stats)

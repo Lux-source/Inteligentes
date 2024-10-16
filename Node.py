@@ -17,3 +17,6 @@ class Node:
             Node(next_state, self, action, self.path_cost + action.cost())
             for next_state, action in self.state.neighbors
         ]
+
+    def __lt__(self, other):
+        return self.heuristic < other.heuristic
