@@ -31,6 +31,10 @@ def loadJSON(file_path):
         # Add neighbors to the origin state
         origin.neighbors.append((destination, segment))
 
+    # Pre-sort neighbors for each state
+    for state in intersections.values():
+        state.neighbors.sort(key=lambda x: x[0].identifier, reverse=True)
+
     initial_state = intersections[data["initial"]]
     goal_state = intersections[data["final"]]
 

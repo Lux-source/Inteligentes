@@ -92,12 +92,16 @@ def breadth_first_search(problem):
 def depth_first_search(problem):
     start_time = time.time()
     frontier = [Node(problem.initial_state)]
+    frontier_states = set(
+        [problem.initial_state.identifier]
+    )  # Track states in frontier
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
 
     while frontier:
         node = frontier.pop()
+        frontier_states.remove(node.state.identifier)  # Remove from frontier states
         nodes_explored += 1
 
         if problem.goal_test(node.state):
@@ -112,24 +116,26 @@ def depth_first_search(problem):
                 "execution_time": execution_time,
             }
 
-        explored.add(node.state)
+        explored.add(node.state.identifier)
 
-        for next_state, action in sorted(
-            node.state.neighbors, key=lambda x: x[0].identifier, reverse=True
-        ):
-            if next_state not in explored and all(
-                front_node.state != next_state for front_node in frontier
+        for next_state, action in node.state.neighbors:
+            if (
+                next_state.identifier not in explored
+                and next_state.identifier not in frontier_states
             ):
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 frontier.append(child)
+                frontier_states.add(next_state.identifier)
                 nodes_generated += 1
+
+    execution_time = format_time(time.time() - start_time)
 
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.time() - start_time),
+        "execution_time": execution_time,
     }
 
 

@@ -7,13 +7,11 @@ class Node:
         self.depth = 0 if parent is None else parent.depth + 1
 
     def __repr__(self):
-        return (
-            f"Node(State={self.state}, Path cost={self.path_cost}, Depth={self.depth})"
-        )
+        return f"Node(State={self.state.identifier}, Path cost={self.path_cost}, Depth={self.depth})"
 
-    def expand(self, problem):
-        """Generates the successors of this node."""
-        return [
-            Node(next_state, self, action, self.path_cost + action.cost())
-            for next_state, action in self.state.neighbors
-        ]
+    # def expand(self, problem):
+    #     """Generates the successors of this node."""
+    #     return [
+    #         Node(next_state, self, action, self.path_cost + action.cost())
+    #         for next_state, action in self.state.neighbors
+    #     ]
