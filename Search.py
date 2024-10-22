@@ -21,7 +21,7 @@ def format_solution_details(solution_path, stats):
     formatted_solution = []
     for action in solution_path:
         formatted_solution.append(
-            f"{action.origin.identifier} → {action.destination.identifier}, {action.distance}"
+            f"{action.origin.identifier} → {action.destination.identifier}, {action.cost():.5f}"
         )
     formatted_solution_str = "[" + ", ".join(formatted_solution) + "]"
 
