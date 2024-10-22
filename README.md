@@ -200,6 +200,7 @@ class Problem:
 
 ```python
 import time
+import itertools
 import heapq
 from datetime import timedelta
 from collections import deque
@@ -347,10 +348,10 @@ def depth_first_search(problem):
 def a_star_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = 0
+    counter = itertools.count()  # Initialize counter to ensure unique entries in the priority queue
     start_node = Node(problem.initial_state)
     f_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (f_cost, counter, start_node))
+    heapq.heappush(frontier, (f_cost, next(counter), start_node))
     explored = set()
     frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
@@ -382,7 +383,7 @@ def a_star_search(problem, heuristic):
             ):
                 child = Node(next_state, node, action, child_cost)
                 f_cost = child_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, counter, child))
+                heapq.heappush(frontier, (f_cost, next(counter), child))
                 frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
@@ -399,10 +400,10 @@ def a_star_search(problem, heuristic):
 def best_first_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = 0
+    counter = itertools.count()  # Initialize counter to ensure unique entries in the priority queue
     start_node = Node(problem.initial_state)
     h_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (h_cost, counter, start_node))
+    heapq.heappush(frontier, (h_cost, next(counter), start_node))
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
@@ -429,7 +430,7 @@ def best_first_search(problem, heuristic):
             if next_state not in explored:
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 h_cost = heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (h_cost, counter, child))
+                heapq.heappush(frontier, (h_cost, next(counter), child))
                 nodes_generated += 1
 
     return None, {
@@ -518,10 +519,16 @@ class BestFirstSearch(SearchAlgorithm):
 
 **Updates**:
 
-- **Output Formatting**: In `format_solution_details`, the action costs are now displayed using `action.cost():.5f`, showing the travel time for each action with five decimal places.
-- **Removal of Sorting in Search Functions**: The unnecessary sorting of neighbors in the search functions has been removed, relying on the pre-sorted neighbors from `ImportJSON.py`.
+- **Use of `itertools.count()`**: In both `a_star_search` and `best_first_search`, a counter from `itertools.count()` is now used when pushing nodes onto the priority queue. This ensures that all items in the queue have a unique secondary key, preventing comparison errors when nodes have equal priority values.
+- **Explanation of Counter Usage**: The comment in `a_star_search` indicates that the counter is used to avoid redefining comparison methods (`__lt__`, `__gt__`) in the `Node` class.
+- **Consistent Frontier Management**: The `explored` set and `frontier_state_costs` dictionary are properly updated to manage nodes efficiently.
+- **Output Formatting**: The `format_solution_details` function displays the action costs with five decimal places, reflecting the travel time in seconds.
 - **Consistent Units**: The `path_cost` and action costs are calculated in seconds, ensuring consistency across the algorithms.
-- **Counter Initialization**: The `counter` used in A\* and Best-First searches is initialized to `0` to ensure proper ordering in the priority queue.
+
+**Notes**:
+
+- **Avoiding Comparison Errors**: By using a unique counter when pushing nodes onto the priority queue, the code avoids `TypeError` exceptions that can occur when the heap tries to compare `Node` objects directly.
+- **Efficient Frontier Handling**: The use of `frontier_state_costs` in `a_star_search` helps avoid revisiting states via more expensive paths.
 
 ---
 
@@ -582,7 +589,7 @@ from Search import (
 )
 
 # Load the problem from the JSON file
-json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\Lab 1. space state search-20241016\examples_with_solutions\problems\huge\calle_cardenal_tabera_y_araoz_albacete_2000_1.json"
+json_file_path = r"C:\path\to\your\problem.json"
 problem = loadJSON(json_file_path)
 
 # Test BFS
@@ -660,3 +667,5 @@ else:
 
 - Ensure that the `json_file_path` points to a valid JSON file containing the problem instance.
 - The printed outputs provide insights into the efficiency and effectiveness of each search algorithm.
+
+---
