@@ -9,7 +9,7 @@ from Search import (
 )
 
 # Load the problem from the JSON file
-json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\Lab 1. space state search-20241016\examples_with_solutions\problems\huge\calle_agustina_aroca_albacete_5000_0.json"
+json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\Lab 1. space state search-20241016\examples_with_solutions\problems\huge\calle_cardenal_tabera_y_araoz_albacete_2000_1.json"
 problem = loadJSON(json_file_path)
 
 # Test BFS

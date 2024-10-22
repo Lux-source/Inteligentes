@@ -3,7 +3,7 @@ class Action:
         self.origin = origin  # State object
         self.destination = destination  # State object
         self.distance = distance  # Distance between origin and destination
-        self.speed = speed  # Speed limit on this segment
+        self.speed = speed * (1000 / 3600)  # Speed limit on this segment
 
     def cost(self):
         # Calculate travel time as the cost
