@@ -1,7 +1,7 @@
 ---
 # Inteligentes
 
-Welcome to the **Inteligentes** project! This repository contains implementations of various search algorithms to navigate through a city represented as a graph. Below is the detailed documentation for each file in the project, explaining their purposes, methods, and attributes.
+This repository contains implementations of various search algorithms to navigate through a city represented as a graph. Below is the detailed documentation for each file in the project, explaining their purposes, methods, and attributes.
 ---
 
 ### **Action.py**
@@ -11,11 +11,11 @@ class Action:
     def __init__(self, origin, destination, distance, speed):
         self.origin = origin  # State object
         self.destination = destination  # State object
-        self.distance = distance  # Distance between origin and destination
-        self.speed = speed  # Speed limit on this segment
+        self.distance = distance  # Distance between origin and destination (in meters)
+        self.speed = speed / 3.6  # Convert speed from km/h to m/s
 
     def cost(self):
-        # Calculate travel time as the cost
+        # Calculate travel time as the cost (in seconds)
         return self.distance / self.speed
 
     def __repr__(self):
@@ -30,13 +30,18 @@ class Action:
 
 - `origin`: The starting state (intersection) for this action.
 - `destination`: The ending state (intersection) for this action.
-- `distance`: The distance between `origin` and `destination`.
-- `speed`: The speed limit on this segment.
+- `distance`: The distance between `origin` and `destination` (in meters).
+- `speed`: The speed limit on this segment (converted to meters per second).
 
 **Methods**:
 
-- `cost(self)`: Calculates and returns the travel time as the cost by dividing `distance` by `speed`.
+- `cost(self)`: Calculates and returns the travel time as the cost by dividing `distance` by `speed`. The result is in **seconds**.
 - `__repr__(self)`: Provides a string representation of the `Action` object for easy debugging and logging.
+
+**Updates**:
+
+- **Unit Conversion**: Speed is now converted from kilometers per hour (km/h) to meters per second (m/s) by dividing by 3.6. This ensures consistent units when calculating the cost.
+- **Cost Calculation**: The cost is calculated in seconds, reflecting the travel time for the segment.
 
 ---
 
@@ -76,9 +81,9 @@ def loadJSON(file_path):
         # Add neighbors to the origin state
         origin.neighbors.append((destination, segment))
 
-    # Pre-sort neighbors for each state to eliminate sorting during search
+    # Pre-sort neighbors for each state to ensure consistent traversal order
     for state in intersections.values():
-        state.neighbors.sort(key=lambda x: x[0].identifier, reverse=True)
+        state.neighbors.sort(key=lambda x: x[0].identifier, reverse=False)
 
     initial_state = intersections[data["initial"]]
     goal_state = intersections[data["final"]]
@@ -99,7 +104,11 @@ def loadJSON(file_path):
 1. **Parsing Intersections**: Creates `State` objects for each intersection and stores them in a dictionary for easy access.
 2. **Parsing Segments**: Creates `Action` objects for each road segment, linking origin and destination `State` objects.
 3. **Linking Neighbors**: Appends each destination and corresponding action to the `neighbors` list of the origin state.
-4. **Pre-sorting Neighbors**: Sorts the `neighbors` list for each state based on the destination identifier in reverse order to maintain consistent traversal order during searches.
+4. **Pre-sorting Neighbors**: Sorts the `neighbors` list for each state based on the destination identifier in ascending order (`reverse=False`) to maintain consistent traversal order during searches.
+
+**Updates**:
+
+- **Neighbor Sorting**: The `reverse` parameter is set to `False`, sorting neighbors in ascending order. This change aligns with the expected traversal order in the search algorithms, ensuring consistent behavior.
 
 ---
 
@@ -127,7 +136,7 @@ class Node:
 - `state`: The current state (intersection) this node represents.
 - `parent`: The parent node leading to this node.
 - `action`: The action taken to reach this node from its parent.
-- `path_cost`: The cumulative cost from the root node to this node.
+- `path_cost`: The cumulative cost from the root node to this node (in seconds).
 - `depth`: The depth of this node in the search tree.
 
 **Methods**:
@@ -136,7 +145,7 @@ class Node:
 
 **Notes**:
 
-- The `expand` method has been removed/commented out to streamline node creation directly within the search functions.
+- The `path_cost` now represents the total travel time in seconds, accumulating the costs from the `Action` objects.
 
 ---
 
@@ -192,11 +201,11 @@ class Problem:
 ```python
 import time
 import heapq
-import itertools
 from datetime import timedelta
 from collections import deque
 from abc import ABC, abstractmethod
 from Node import Node
+
 
 # Helper function to extract the solution path
 def solution(node):
@@ -207,12 +216,13 @@ def solution(node):
     path.reverse()
     return path
 
+
 # Formatting the output for easier readability
 def format_solution_details(solution_path, stats):
     formatted_solution = []
     for action in solution_path:
         formatted_solution.append(
-            f"{action.origin.identifier} → {action.destination.identifier}, {action.distance}"
+            f"{action.origin.identifier} → {action.destination.identifier}, {action.cost():.5f}"
         )
     formatted_solution_str = "[" + ", ".join(formatted_solution) + "]"
 
@@ -226,10 +236,20 @@ def format_solution_details(solution_path, stats):
     )
     return formatted_output
 
+
 # Convert time to the desired format days:hours:min:seconds
 def format_time(seconds):
     td = timedelta(seconds=seconds)
-    return str(td)
+    days = td.days
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, sec = divmod(remainder, 60)
+    microseconds = td.microseconds
+
+    if days > 0:
+        return f"{days}:{hours}:{minutes:02}:{sec:02}.{microseconds:06}"
+    else:
+        return f"{hours}:{minutes:02}:{sec:02}.{microseconds:06}"
+
 
 # Breadth-First Search (BFS) function
 def breadth_first_search(problem):
@@ -246,7 +266,7 @@ def breadth_first_search(problem):
         if problem.goal_test(node.state):
             solution_path = solution(node)
             execution_time = format_time(time.perf_counter() - start_time)
-            solution_cost = node.path_cost
+            solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
@@ -255,12 +275,11 @@ def breadth_first_search(problem):
                 "execution_time": execution_time,
             }
 
-        explored.add(node.state.identifier)
+        explored.add(node.state)
 
         for next_state, action in node.state.neighbors:
-            if (
-                next_state.identifier not in explored
-                and all(front_node.state.identifier != next_state.identifier for front_node in frontier)
+            if next_state not in explored and all(
+                front_node.state != next_state for front_node in frontier
             ):
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 frontier.append(child)
@@ -273,6 +292,7 @@ def breadth_first_search(problem):
         "solution_cost": None,
         "execution_time": format_time(time.perf_counter() - start_time),
     }
+
 
 # Depth-First Search (DFS) function
 def depth_first_search(problem):
@@ -291,7 +311,7 @@ def depth_first_search(problem):
         if problem.goal_test(node.state):
             solution_path = solution(node)
             execution_time = format_time(time.perf_counter() - start_time)
-            solution_cost = node.path_cost
+            solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
@@ -322,16 +342,17 @@ def depth_first_search(problem):
         "execution_time": execution_time,
     }
 
+
 # A* Search function
 def a_star_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = itertools.count()
+    counter = 0
     start_node = Node(problem.initial_state)
     f_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (f_cost, next(counter), start_node))
+    heapq.heappush(frontier, (f_cost, counter, start_node))
     explored = set()
-    frontier_state_costs = {problem.initial_state.identifier: 0}
+    frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
     nodes_explored = 0
 
@@ -342,7 +363,7 @@ def a_star_search(problem, heuristic):
         if problem.goal_test(node.state):
             solution_path = solution(node)
             execution_time = format_time(time.perf_counter() - start_time)
-            solution_cost = node.path_cost
+            solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
@@ -351,18 +372,18 @@ def a_star_search(problem, heuristic):
                 "execution_time": execution_time,
             }
 
-        explored.add(node.state.identifier)
+        explored.add(node.state)
 
         for next_state, action in node.state.neighbors:
             child_cost = node.path_cost + action.cost()
-            if next_state.identifier not in explored and (
-                next_state.identifier not in frontier_state_costs
-                or child_cost < frontier_state_costs[next_state.identifier]
+            if next_state not in explored and (
+                next_state not in frontier_state_costs
+                or child_cost < frontier_state_costs[next_state]
             ):
                 child = Node(next_state, node, action, child_cost)
                 f_cost = child_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, next(counter), child))
-                frontier_state_costs[next_state.identifier] = child_cost
+                heapq.heappush(frontier, (f_cost, counter, child))
+                frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
     return None, {
@@ -372,15 +393,16 @@ def a_star_search(problem, heuristic):
         "solution_cost": None,
         "execution_time": format_time(time.perf_counter() - start_time),
     }
+
 
 # Best-First Search function
 def best_first_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = itertools.count()
+    counter = 0
     start_node = Node(problem.initial_state)
     h_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (h_cost, next(counter), start_node))
+    heapq.heappush(frontier, (h_cost, counter, start_node))
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
@@ -392,7 +414,7 @@ def best_first_search(problem, heuristic):
         if problem.goal_test(node.state):
             solution_path = solution(node)
             execution_time = format_time(time.perf_counter() - start_time)
-            solution_cost = node.path_cost
+            solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
                 "nodes_explored": nodes_explored,
@@ -401,13 +423,13 @@ def best_first_search(problem, heuristic):
                 "execution_time": execution_time,
             }
 
-        explored.add(node.state.identifier)
+        explored.add(node.state)
 
         for next_state, action in node.state.neighbors:
-            if next_state.identifier not in explored:
+            if next_state not in explored:
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 h_cost = heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (h_cost, next(counter), child))
+                heapq.heappush(frontier, (h_cost, counter, child))
                 nodes_generated += 1
 
     return None, {
@@ -417,6 +439,7 @@ def best_first_search(problem, heuristic):
         "solution_cost": None,
         "execution_time": format_time(time.perf_counter() - start_time),
     }
+
 
 # Heuristic function for A*
 def heuristic(state, goal_state):
@@ -424,21 +447,25 @@ def heuristic(state, goal_state):
     dy = state.longitude - goal_state.longitude
     return (dx**2 + dy**2) ** 0.5
 
+
 # Abstract Base Class for Search Algorithms
 class SearchAlgorithm(ABC):
     @abstractmethod
     def search(self, problem):
         pass
 
+
 # Breadth-First Search class
 class BreadthFirstSearch(SearchAlgorithm):
     def search(self, problem):
         return breadth_first_search(problem)
 
+
 # Depth-First Search class
 class DepthFirstSearch(SearchAlgorithm):
     def search(self, problem):
         return depth_first_search(problem)
+
 
 # A* Search class
 class AStarSearch(SearchAlgorithm):
@@ -447,6 +474,7 @@ class AStarSearch(SearchAlgorithm):
 
     def search(self, problem):
         return a_star_search(problem, self.heuristic)
+
 
 # Best-First Search class
 class BestFirstSearch(SearchAlgorithm):
@@ -485,13 +513,15 @@ class BestFirstSearch(SearchAlgorithm):
    - `SearchAlgorithm(ABC)`: Defines an abstract base class for all search algorithms, ensuring consistency in their implementation.
 
 5. **Search Algorithm Classes**:
+
    - `BreadthFirstSearch`, `DepthFirstSearch`, `AStarSearch`, `BestFirstSearch`: Concrete classes inheriting from `SearchAlgorithm`, each implementing their respective search strategies.
 
-**Key Optimizations**:
+**Updates**:
 
-- **Pre-sorted Neighbors**: Neighbors are sorted during problem initialization in `ImportJSON.py` to eliminate the need for sorting during each node expansion, enhancing performance.
-- **Efficient Explored Set Management**: In DFS, a separate `frontier_states` set is maintained for **O(1)** duplicate checks, reducing computational overhead.
-- **Lightweight Node Creation**: Nodes are created efficiently without unnecessary methods or attributes, ensuring faster node expansions.
+- **Output Formatting**: In `format_solution_details`, the action costs are now displayed using `action.cost():.5f`, showing the travel time for each action with five decimal places.
+- **Removal of Sorting in Search Functions**: The unnecessary sorting of neighbors in the search functions has been removed, relying on the pre-sorted neighbors from `ImportJSON.py`.
+- **Consistent Units**: The `path_cost` and action costs are calculated in seconds, ensuring consistency across the algorithms.
+- **Counter Initialization**: The `counter` used in A\* and Best-First searches is initialized to `0` to ensure proper ordering in the priority queue.
 
 ---
 
@@ -534,8 +564,7 @@ class State:
 
 **Notes**:
 
-- Ensures immutability post-creation to maintain consistent hashing and equality checks.
-- Neighbors are pre-sorted during initialization for efficient traversal during searches.
+- Neighbors are pre-sorted during initialization in `ImportJSON.py` for consistent traversal during searches.
 
 ---
 
@@ -553,7 +582,7 @@ from Search import (
 )
 
 # Load the problem from the JSON file
-json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\Lab 1. space state search-20241016\examples_with_solutions\problems\huge\calle_agustina_aroca_albacete_5000_0.json"
+json_file_path = r"C:\Users\andre\DocumentsCopia\ACurso_2425\Primer Cuatri\INTELIGENTES\Lab\Entrega 1\Lab 1. space state search-20241016\examples_with_solutions\problems\huge\calle_cardenal_tabera_y_araoz_albacete_2000_1.json"
 problem = loadJSON(json_file_path)
 
 # Test BFS
@@ -619,7 +648,13 @@ else:
      - Instantiates `BestFirstSearch` with the provided `heuristic` function and executes the `search` method.
 
 3. **Output Formatting**:
+
    - Uses `format_solution_details` to neatly format and display the solution paths along with performance statistics such as nodes generated, nodes explored, solution depth, solution cost, and execution time.
+
+**Updates**:
+
+- **Output Formatting**: The action costs are now displayed with five decimal places, reflecting the travel time in seconds.
+- **Consistent Units**: The total solution cost and action costs are in seconds, matching the units used in the algorithms.
 
 **Notes**:
 
