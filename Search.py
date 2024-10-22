@@ -76,9 +76,7 @@ def breadth_first_search(problem):
 
         explored.add(node.state)
 
-        for next_state, action in sorted(
-            node.state.neighbors, key=lambda x: x[0].identifier
-        ):
+        for next_state, action in node.state.neighbors:
             if next_state not in explored and all(
                 front_node.state != next_state for front_node in frontier
             ):
