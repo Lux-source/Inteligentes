@@ -1,6 +1,5 @@
 import time
 import heapq
-import itertools
 from datetime import timedelta
 from collections import deque
 from abc import ABC, abstractmethod
@@ -40,12 +39,20 @@ def format_solution_details(solution_path, stats):
 # Convert time to the desired format days:hours:min:seconds
 def format_time(seconds):
     td = timedelta(seconds=seconds)
-    return str(td)
+    days = td.days
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, sec = divmod(remainder, 60)
+    microseconds = td.microseconds
+
+    if days > 0:
+        return f"{days}:{hours}:{minutes:02}:{sec:02}.{microseconds:06}"
+    else:
+        return f"{hours}:{minutes:02}:{sec:02}.{microseconds:06}"
 
 
 # Breadth-First Search (BFS) function
 def breadth_first_search(problem):
-    start_time = time.time()
+    start_time = time.perf_counter()
     frontier = deque([Node(problem.initial_state)])
     explored = set()
     nodes_generated = 1
@@ -57,7 +64,7 @@ def breadth_first_search(problem):
 
         if problem.goal_test(node.state):
             solution_path = solution(node)
-            execution_time = format_time(time.time() - start_time)
+            execution_time = format_time(time.perf_counter() - start_time)
             solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
@@ -84,13 +91,13 @@ def breadth_first_search(problem):
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.time() - start_time),
+        "execution_time": format_time(time.perf_counter() - start_time),
     }
 
 
 # Depth-First Search (DFS) function
 def depth_first_search(problem):
-    start_time = time.time()
+    start_time = time.perf_counter()
     frontier = [Node(problem.initial_state)]
     frontier_states = set(
         [problem.initial_state.identifier]
@@ -106,7 +113,7 @@ def depth_first_search(problem):
 
         if problem.goal_test(node.state):
             solution_path = solution(node)
-            execution_time = format_time(time.time() - start_time)
+            execution_time = format_time(time.perf_counter() - start_time)
             solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
@@ -128,7 +135,7 @@ def depth_first_search(problem):
                 frontier_states.add(next_state.identifier)
                 nodes_generated += 1
 
-    execution_time = format_time(time.time() - start_time)
+    execution_time = format_time(time.perf_counter() - start_time)
 
     return None, {
         "nodes_generated": nodes_generated,
@@ -141,12 +148,12 @@ def depth_first_search(problem):
 
 # A* Search function
 def a_star_search(problem, heuristic):
-    start_time = time.time()
+    start_time = time.perf_counter()
     frontier = []
-    counter = itertools.count()
+    counter = 0
     start_node = Node(problem.initial_state)
     f_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (f_cost, next(counter), start_node))
+    heapq.heappush(frontier, (f_cost, counter, start_node))
     explored = set()
     frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
@@ -158,7 +165,7 @@ def a_star_search(problem, heuristic):
 
         if problem.goal_test(node.state):
             solution_path = solution(node)
-            execution_time = format_time(time.time() - start_time)
+            execution_time = format_time(time.perf_counter() - start_time)
             solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
@@ -178,7 +185,7 @@ def a_star_search(problem, heuristic):
             ):
                 child = Node(next_state, node, action, child_cost)
                 f_cost = child_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, next(counter), child))
+                heapq.heappush(frontier, (f_cost, counter, child))
                 frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
@@ -187,17 +194,17 @@ def a_star_search(problem, heuristic):
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.time() - start_time),
+        "execution_time": format_time(time.perf_counter() - start_time),
     }
 
 
 def best_first_search(problem, heuristic):
-    start_time = time.time()
+    start_time = time.perf_counter()
     frontier = []
-    counter = itertools.count()
+    counter = 0
     start_node = Node(problem.initial_state)
     h_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (h_cost, next(counter), start_node))
+    heapq.heappush(frontier, (h_cost, counter, start_node))
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
@@ -208,7 +215,7 @@ def best_first_search(problem, heuristic):
 
         if problem.goal_test(node.state):
             solution_path = solution(node)
-            execution_time = format_time(time.time() - start_time)
+            execution_time = format_time(time.perf_counter() - start_time)
             solution_cost = format_time(node.path_cost)
             return solution_path, {
                 "nodes_generated": nodes_generated,
@@ -224,7 +231,7 @@ def best_first_search(problem, heuristic):
             if next_state not in explored:
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 h_cost = heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (h_cost, next(counter), child))
+                heapq.heappush(frontier, (h_cost, counter, child))
                 nodes_generated += 1
 
     return None, {
@@ -232,7 +239,7 @@ def best_first_search(problem, heuristic):
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.time() - start_time),
+        "execution_time": format_time(time.perf_counter() - start_time),
     }
 
 
