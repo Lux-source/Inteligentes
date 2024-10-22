@@ -1,4 +1,5 @@
 import time
+import itertools
 import heapq
 from datetime import timedelta
 from collections import deque
@@ -148,10 +149,12 @@ def depth_first_search(problem):
 def a_star_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = 0
+    counter = (
+        itertools.count()
+    )  # Initialize counter that is unique without need to redefine in node __lt__, __gt__,...
     start_node = Node(problem.initial_state)
     f_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (f_cost, counter, start_node))
+    heapq.heappush(frontier, (f_cost, next(counter), start_node))
     explored = set()
     frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
@@ -183,7 +186,7 @@ def a_star_search(problem, heuristic):
             ):
                 child = Node(next_state, node, action, child_cost)
                 f_cost = child_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, counter, child))
+                heapq.heappush(frontier, (f_cost, next(counter), child))
                 frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
@@ -199,10 +202,10 @@ def a_star_search(problem, heuristic):
 def best_first_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = 0
+    counter = itertools.count()
     start_node = Node(problem.initial_state)
     h_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (h_cost, counter, start_node))
+    heapq.heappush(frontier, (h_cost, next(counter), start_node))
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
@@ -229,7 +232,7 @@ def best_first_search(problem, heuristic):
             if next_state not in explored:
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 h_cost = heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (h_cost, counter, child))
+                heapq.heappush(frontier, (h_cost, next(counter), child))
                 nodes_generated += 1
 
     return None, {
