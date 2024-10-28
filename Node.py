@@ -1,17 +1,23 @@
 class Node:
-    def __init__(self, state, parent=None, action=None, path_cost=0):
+    def __init__(self, state, parent=None, action=None, path_cost=0, heuristic_cost=0):
         self.state = state  # State object
         self.parent = parent  # Parent Node
         self.action = action  # Action taken to reach this node
-        self.path_cost = path_cost  # Total cost from the root node to this node
+        self.path_cost = (
+            path_cost  # Total cost from the root node to this node (g_cost)
+        )
+        self.heuristic_cost = heuristic_cost  # Heuristic estimate to the goal (h_cost)
+        self.f_cost = (
+            self.path_cost + self.heuristic_cost
+        )  # Total cost for A* (f = g + h)
         self.depth = 0 if parent is None else parent.depth + 1
 
-    def __repr__(self):
-        return f"Node(State={self.state.identifier}, Path cost={self.path_cost}, Depth={self.depth})"
+    def __lt__(self, other):
+        # Comparison based on `f_cost` and then `id` for tie-breaking
+        return (self.f_cost, self.state.identifier) < (
+            other.f_cost,
+            other.state.identifier,
+        )
 
-    # def expand(self, problem):
-    #     """Generates the successors of this node."""
-    #     return [
-    #         Node(next_state, self, action, self.path_cost + action.cost())
-    #         for next_state, action in self.state.neighbors
-    #     ]
+    def __repr__(self):
+        return f"Node(State={self.state.identifier}, Path cost={self.path_cost}, Heuristic={self.heuristic_cost}, Depth={self.depth})"
