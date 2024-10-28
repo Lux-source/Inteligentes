@@ -22,7 +22,7 @@ def format_solution_details(solution_path, stats):
     formatted_solution = []
     for action in solution_path:
         formatted_solution.append(
-            f"{action.origin.identifier} → {action.destination.identifier}, {action.cost():.5f}"
+            f"{action.origin.identifier} → {action.destination.identifier}, {action.cost()}"
         )
     formatted_solution_str = "[" + ", ".join(formatted_solution) + "]"
 
@@ -77,7 +77,10 @@ def breadth_first_search(problem):
 
         explored.add(node.state)
 
-        for next_state, action in node.state.neighbors:
+        # Sort neighbors by identifier before processing
+        sorted_neighbors = sorted(node.state.neighbors, key=lambda x: x[0].identifier)
+
+        for next_state, action in sorted_neighbors:
             if next_state not in explored and all(
                 front_node.state != next_state for front_node in frontier
             ):
@@ -124,7 +127,10 @@ def depth_first_search(problem):
 
         explored.add(node.state.identifier)
 
-        for next_state, action in node.state.neighbors:
+        # Sort neighbors by identifier before processing
+        sorted_neighbors = sorted(node.state.neighbors, key=lambda x: x[0].identifier)
+
+        for next_state, action in sorted_neighbors:
             if (
                 next_state.identifier not in explored
                 and next_state.identifier not in frontier_states
@@ -149,19 +155,19 @@ def depth_first_search(problem):
 def a_star_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    counter = (
-        itertools.count()
-    )  # Initialize counter that is unique without need to redefine in node __lt__, __gt__,...
+    counter = itertools.count()
     start_node = Node(problem.initial_state)
     f_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (f_cost, next(counter), start_node))
+    heapq.heappush(
+        frontier, (f_cost, start_node.state.identifier, next(counter), start_node)
+    )
     explored = set()
     frontier_state_costs = {problem.initial_state: 0}
     nodes_generated = 1
     nodes_explored = 0
 
     while frontier:
-        _, _, node = heapq.heappop(frontier)
+        _, _, _, node = heapq.heappop(frontier)
         nodes_explored += 1
 
         if problem.goal_test(node.state):
@@ -186,16 +192,19 @@ def a_star_search(problem, heuristic):
             ):
                 child = Node(next_state, node, action, child_cost)
                 f_cost = child_cost + heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (f_cost, next(counter), child))
+                heapq.heappush(
+                    frontier, (f_cost, child.state.identifier, next(counter), child)
+                )
                 frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
+    execution_time = format_time(time.perf_counter() - start_time)
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.perf_counter() - start_time),
+        "execution_time": execution_time,
     }
 
 
@@ -205,13 +214,15 @@ def best_first_search(problem, heuristic):
     counter = itertools.count()
     start_node = Node(problem.initial_state)
     h_cost = heuristic(start_node.state, problem.goal_state)
-    heapq.heappush(frontier, (h_cost, next(counter), start_node))
+    heapq.heappush(
+        frontier, (h_cost, start_node.state.identifier, next(counter), start_node)
+    )
     explored = set()
     nodes_generated = 1
     nodes_explored = 0
 
     while frontier:
-        _, _, node = heapq.heappop(frontier)
+        _, _, _, node = heapq.heappop(frontier)
         nodes_explored += 1
 
         if problem.goal_test(node.state):
@@ -232,15 +243,18 @@ def best_first_search(problem, heuristic):
             if next_state not in explored:
                 child = Node(next_state, node, action, node.path_cost + action.cost())
                 h_cost = heuristic(child.state, problem.goal_state)
-                heapq.heappush(frontier, (h_cost, next(counter), child))
+                heapq.heappush(
+                    frontier, (h_cost, child.state.identifier, next(counter), child)
+                )
                 nodes_generated += 1
 
+    execution_time = format_time(time.perf_counter() - start_time)
     return None, {
         "nodes_generated": nodes_generated,
         "nodes_explored": nodes_explored,
         "solution_depth": None,
         "solution_cost": None,
-        "execution_time": format_time(time.perf_counter() - start_time),
+        "execution_time": execution_time,
     }
 
 
