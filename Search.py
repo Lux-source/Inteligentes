@@ -1,5 +1,4 @@
 import time
-import itertools
 import heapq
 from datetime import timedelta
 from collections import deque
