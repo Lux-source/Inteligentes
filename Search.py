@@ -146,7 +146,8 @@ def a_star_search(problem, heuristic):
         heuristic_cost=heuristic(problem.initial_state, problem.goal_state),
     )
     start_node.f_cost = (
-        start_node.path_cost + start_node.heuristic_cost
+        start_node.path_cost
+        + start_node.heuristic_cost  # no sumar seg y metros, solo coste segundos en tiempo
     )  # Initial f_cost
     heapq.heappush(
         frontier, (start_node.f_cost, start_node.state.identifier, start_node)
@@ -217,9 +218,14 @@ def best_first_search(problem, heuristic):
         start_node.state, problem.goal_state
     )  # Set heuristic cost for start node
 
-    # Only push tuples with `h_cost` and `id` for comparisons
+    # push tuples con h_cost e id
     heapq.heappush(
-        frontier, (start_node.h_cost, start_node.state.identifier, start_node)
+        frontier,
+        (
+            start_node.h_cost,
+            start_node.state.identifier,
+            start_node,
+        ),  # Cambiar id, por tiempo mas viejo (edad)
     )
 
     explored = set()
@@ -227,7 +233,6 @@ def best_first_search(problem, heuristic):
     nodes_explored = 0
 
     while frontier:
-        # Unpack without comparing `Node` directly
         _, _, node = heapq.heappop(frontier)
         nodes_explored += 1
 
@@ -252,7 +257,7 @@ def best_first_search(problem, heuristic):
                     child.state, problem.goal_state
                 )  # Set heuristic cost
 
-                # Push with `h_cost` and `id` only; leave `Node` out of comparison fields
+                # Push with h_cost and id
                 heapq.heappush(frontier, (child.h_cost, next_state.identifier, child))
                 nodes_generated += 1
 
@@ -267,7 +272,9 @@ def best_first_search(problem, heuristic):
 
 
 # Heuristic function for A*
-def heuristic(state, goal_state):
+def heuristic(
+    state, goal_state
+):  # Aqu no debemos usar la distancia sino el tiempo geopy.distance
     dx = state.latitude - goal_state.latitude
     dy = state.longitude - goal_state.longitude
     return (dx**2 + dy**2) ** 0.5
