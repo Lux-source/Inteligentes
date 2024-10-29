@@ -1,5 +1,6 @@
 import time
 import heapq
+from geopy.distance import geodesic
 from datetime import timedelta
 from collections import deque
 from abc import ABC, abstractmethod
@@ -144,13 +145,7 @@ def a_star_search(problem, heuristic):
         problem.initial_state,
         heuristic_cost=heuristic(problem.initial_state, problem.goal_state),
     )
-    start_node.f_cost = (
-        start_node.path_cost
-        + start_node.heuristic_cost  # no sumar seg y metros, solo coste segundos en tiempo
-    )  # Initial f_cost
-    heapq.heappush(
-        frontier, (start_node.f_cost, start_node.state.identifier, start_node)
-    )
+    heapq.heappush(frontier, (start_node.f_cost, start_node.order, start_node))
 
     explored = set()
     frontier_state_costs = {
@@ -195,7 +190,7 @@ def a_star_search(problem, heuristic):
                 )  # Calculate f_cost
 
                 # Push to priority queue based on f_cost and id
-                heapq.heappush(frontier, (child.f_cost, next_state.identifier, child))
+                heapq.heappush(frontier, (child.f_cost, child.order, child))
                 frontier_state_costs[next_state] = child_cost
                 nodes_generated += 1
 
@@ -212,17 +207,17 @@ def a_star_search(problem, heuristic):
 def best_first_search(problem, heuristic):
     start_time = time.perf_counter()
     frontier = []
-    start_node = Node(problem.initial_state)
-    start_node.h_cost = heuristic(
-        start_node.state, problem.goal_state
-    )  # Set heuristic cost for start node
+    start_node = Node(
+        problem.initial_state,
+        heuristic_cost=heuristic(problem.initial_state, problem.goal_state),
+    )
 
-    # push tuples con h_cost e id
+    # push tuples con h_cost
     heapq.heappush(
         frontier,
         (
-            start_node.h_cost,
-            start_node.state.identifier,
+            start_node.heuristic_cost,
+            start_node.order,
             start_node,
         ),  # Cambiar id, por tiempo mas viejo (edad)
     )
@@ -251,13 +246,16 @@ def best_first_search(problem, heuristic):
 
         for next_state, action in node.state.neighbors:
             if next_state not in explored:
-                child = Node(next_state, node, action, node.path_cost + action.cost())
-                child.h_cost = heuristic(
-                    child.state, problem.goal_state
-                )  # Set heuristic cost
+                child = Node(
+                    next_state,
+                    node,
+                    action,
+                    node.path_cost + action.cost(),
+                    heuristic_cost=heuristic(next_state, problem.goal_state),
+                )
 
                 # Push with h_cost and id
-                heapq.heappush(frontier, (child.h_cost, next_state.identifier, child))
+                heapq.heappush(frontier, (child.heuristic_cost, child.order, child))
                 nodes_generated += 1
 
     execution_time = format_time(time.perf_counter() - start_time)
@@ -273,10 +271,17 @@ def best_first_search(problem, heuristic):
 # Heuristic function for A*
 def heuristic(
     state, goal_state
-):  # Aqu no debemos usar la distancia sino el tiempo geopy.distance
-    dx = state.latitude - goal_state.latitude
-    dy = state.longitude - goal_state.longitude
-    return (dx**2 + dy**2) ** 0.5
+):  # Aqui no debemos usar la distancia sino el tiempo geopy.distance
+    #    dx = state.latitude - goal_state.latitude
+    #    dy = state.longitude - goal_state.longitude
+    #   return (dx**2 + dy**2) ** 0.5
+    distance = geodesic(
+        (state.latitude, state.longitude), (goal_state.latitude, goal_state.longitude)
+    ).meters
+    max_speed_kmph = 120
+    max_speed_ms = max_speed_kmph / 3.6
+    estimated_time = distance / max_speed_ms
+    return estimated_time
 
 
 # Abstract Base Class for Search Algorithms
